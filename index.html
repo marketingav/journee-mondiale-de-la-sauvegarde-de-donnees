@@ -1,0 +1,535 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Vos données survivraient-elles ?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Concept : un test de sauvegarde. Une carte par question, une barre de progression en 10 blocs
+   comme une copie de disque qui avance, un bilan en pourcentage de protection. */
+:root {
+  --bg: #e9eff7;
+  --surface: #ffffff;
+  --surface-2: #f2f6fc;
+  --ink: #0e1a3b;
+  --muted: #4d5c86;
+  --line: #c9d5e8;
+  --accent: #2c47f5;
+  --accent-ink: #ffffff;
+  --sun: #ffc53d;
+  --sun-ink: #3a2a00;
+  --good: #0f7a58;
+  --good-bg: #dcf3ea;
+  --mid: #a35a00;
+  --mid-bg: #fdecd0;
+  --bad: #b8302a;
+  --bad-bg: #fbdcd9;
+  --font-display: 'Bricolage Grotesque', 'Arial Rounded MT Bold', system-ui, sans-serif;
+  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1126; --surface: #121b39; --surface-2: #19244a; --ink: #e9eeff; --muted: #9eabd2;
+    --line: #28365f; --accent: #8199ff; --accent-ink: #0a1126; --sun: #ffcb4d; --sun-ink: #3a2a00;
+    --good: #55d6a5; --good-bg: #123a30; --mid: #ffb85c; --mid-bg: #433115; --bad: #ff8f86; --bad-bg: #4a1f24;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1126; --surface: #121b39; --surface-2: #19244a; --ink: #e9eeff; --muted: #9eabd2;
+  --line: #28365f; --accent: #8199ff; --accent-ink: #0a1126; --sun: #ffcb4d; --sun-ink: #3a2a00;
+  --good: #55d6a5; --good-bg: #123a30; --mid: #ffb85c; --mid-bg: #433115; --bad: #ff8f86; --bad-bg: #4a1f24;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.5;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  min-height: 100%;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+p { margin: 0; }
+.mono { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* Intro */
+.intro { display: flex; flex-direction: column; gap: 22px; }
+.disk { width: 96px; height: 96px; }
+.disk .d-body { fill: var(--accent); }
+.disk .d-shutter { fill: var(--surface); }
+.disk .d-slot { fill: var(--accent); }
+.disk .d-label { fill: var(--surface); }
+.disk .d-line { fill: var(--line); }
+.disk .d-badge { fill: var(--sun); }
+.disk .d-check { fill: none; stroke: var(--sun-ink); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.intro h1 { font-size: clamp(34px, 8vw, 52px); line-height: 1.04; font-weight: 800; font-variation-settings: 'opsz' 96; }
+.intro .lead { color: var(--muted); font-size: 19px; max-width: 34em; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.chips li { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; padding: 14px 24px; font-weight: 700; font-size: 17px; background: var(--accent); color: var(--accent-ink); min-height: 50px; }
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn.ghost:hover { border-color: var(--accent); filter: none; }
+.btn.start { align-self: flex-start; }
+
+/* Quiz */
+.progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.segs { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.segs span { height: 10px; border-radius: 3px; background: var(--line); }
+.segs span.done { background: var(--accent); }
+.segs span.now { background: var(--sun); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: clamp(20px, 5vw, 32px); display: flex; flex-direction: column; gap: 22px; }
+.card h2 { font-size: clamp(24px, 5.5vw, 32px); line-height: 1.15; font-weight: 700; }
+.opts { display: flex; flex-direction: column; gap: 10px; }
+.opt { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 14px; text-align: left; width: 100%; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); border: 1.5px solid var(--line); min-width: 0; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt .key { font-family: var(--font-mono); font-weight: 600; font-size: 13px; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); }
+.opt .txt { min-width: 0; overflow-wrap: anywhere; padding-top: 2px; }
+.opt:disabled { cursor: default; }
+.opt.dim { opacity: 0.6; }
+.opt.picked { border-color: var(--accent); border-width: 2px; padding: 13.5px 15.5px; opacity: 1; }
+.opt.picked .key { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; margin-top: 6px; background: var(--good-bg); color: var(--good); }
+
+.feedback { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; animation: rise 0.25s ease-out; }
+.score-pill { align-self: flex-start; font-family: var(--font-mono); font-weight: 600; font-size: 13px; padding: 4px 10px; border-radius: 8px; }
+.score-pill.s2 { background: var(--good-bg); color: var(--good); }
+.score-pill.s1 { background: var(--mid-bg); color: var(--mid); }
+.score-pill.s0 { background: var(--bad-bg); color: var(--bad); }
+.feedback p { color: var(--ink); }
+.next-row { display: flex; justify-content: flex-end; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Résultat */
+.result { display: flex; flex-direction: column; gap: 20px; }
+.hero-score { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; }
+.pct { font-family: var(--font-display); font-weight: 800; font-size: clamp(76px, 20vw, 112px); line-height: 0.9; font-variant-numeric: tabular-nums; font-variation-settings: 'opsz' 96; color: var(--accent); }
+.pct small { font-size: 0.4em; font-weight: 700; margin-left: 2px; }
+.profile { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 220px; }
+.profile h2 { font-size: clamp(26px, 6vw, 34px); line-height: 1.1; font-weight: 800; }
+.gauge { height: 14px; border-radius: 7px; background: var(--line); overflow: hidden; }
+.gauge i { display: block; height: 100%; width: 0; border-radius: 7px; background: var(--accent); transition: width 0.9s cubic-bezier(.2,.7,.2,1); }
+.cells { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.cell { border-radius: 10px; padding: 8px 6px; text-align: center; font-family: var(--font-mono); font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
+.cell b { font-size: 18px; font-weight: 600; }
+.cell.s2 { background: var(--good-bg); color: var(--good); }
+.cell.s1 { background: var(--mid-bg); color: var(--mid); }
+.cell.s0 { background: var(--bad-bg); color: var(--bad); }
+.section-title { font-size: 22px; font-weight: 700; }
+.actions { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: a; }
+.actions li { counter-increment: a; display: grid; grid-template-columns: auto 1fr; gap: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.actions li::before { content: counter(a); font-family: var(--font-display); font-weight: 800; font-size: 20px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--sun); color: var(--sun-ink); }
+.actions li span { min-width: 0; overflow-wrap: anywhere; }
+.rule { background: var(--accent); color: var(--accent-ink); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; }
+.rule .mono { color: inherit; opacity: 0.85; }
+.rule strong { font-family: var(--font-display); font-size: 24px; font-weight: 800; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.share-box { display: flex; flex-direction: column; gap: 8px; }
+.share-box textarea { width: 100%; min-height: 88px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; padding: 12px; resize: vertical; }
+.status { color: var(--good); font-weight: 600; min-height: 1.4em; }
+.foot { color: var(--muted); font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback { animation: none; }
+  .gauge i { transition: none; }
+}
+@media (max-width: 420px) {
+  body { font-size: 16px; }
+  .cells { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+}
+</style>
+
+<div class="wrap" id="app">
+
+  <section class="intro" id="intro">
+    <svg class="disk" viewBox="0 0 120 120" role="img" aria-label="Disquette de sauvegarde">
+      <rect class="d-body" x="6" y="6" width="108" height="108" rx="12"/>
+      <rect class="d-shutter" x="30" y="6" width="56" height="36" rx="3"/>
+      <rect class="d-slot" x="66" y="12" width="11" height="24" rx="2"/>
+      <rect class="d-label" x="22" y="64" width="76" height="50" rx="4"/>
+      <rect class="d-line" x="32" y="76" width="44" height="5" rx="2.5"/>
+      <rect class="d-line" x="32" y="88" width="56" height="5" rx="2.5"/>
+      <circle class="d-badge" cx="98" cy="22" r="20"/>
+      <path class="d-check" d="M88 22 l7 7 l13 -14"/>
+    </svg>
+    <p class="mono">Journée mondiale de la sauvegarde des données</p>
+    <h1>Vos données survivraient-elles à une très mauvaise journée ?</h1>
+    <p class="lead">Un téléphone dans une piscine, une boîte mail piratée, un colis imaginaire à 1,99 €. Dix scénarios, trois minutes, et un bilan qui dit où vous en êtes.</p>
+    <ul class="chips">
+      <li>10 questions</li>
+      <li>environ 3 min</li>
+      <li>aucune donnée collectée</li>
+    </ul>
+    <button class="btn start" id="startBtn" type="button">Lancer le test</button>
+  </section>
+
+  <section id="quiz" hidden>
+    <div class="wrap" style="gap:16px">
+      <div class="progress-head">
+        <span class="mono" id="qCount">Question 1 sur 10</span>
+        <span class="mono" id="qScore">0 pt</span>
+      </div>
+      <div class="segs" id="segs" aria-hidden="true"></div>
+      <div class="card">
+        <h2 id="qText"></h2>
+        <div class="opts" id="opts" role="group" aria-labelledby="qText"></div>
+        <div id="feedbackSlot" aria-live="polite"></div>
+        <div class="next-row"><button class="btn" id="nextBtn" type="button" hidden>Question suivante</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="result" id="result" hidden>
+    <p class="mono">Votre bilan</p>
+    <div class="hero-score">
+      <div class="pct"><span id="pctNum">0</span><small>%</small></div>
+      <div class="profile">
+        <span class="mono">Niveau de protection</span>
+        <h2 id="profName"></h2>
+      </div>
+    </div>
+    <div class="gauge" aria-hidden="true"><i id="gaugeFill"></i></div>
+    <p id="profDesc"></p>
+
+    <h3 class="section-title">Vos dix réponses</h3>
+    <div class="cells" id="cells"></div>
+
+    <h3 class="section-title" id="actTitle">À régler en priorité</h3>
+    <ol class="actions" id="actions"></ol>
+
+    <div class="rule">
+      <span class="mono">À retenir</span>
+      <strong>Règle 3-2-1</strong>
+      <p>3 copies de vos données, sur 2 supports différents, dont 1 copie rangée hors de chez vous.</p>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="copyBtn" type="button">Copier mon score</button>
+      <button class="btn ghost" id="againBtn" type="button">Refaire le test</button>
+    </div>
+    <div class="share-box">
+      <p class="status" id="status" role="status"></p>
+      <textarea id="shareText" readonly hidden aria-label="Texte à copier"></textarea>
+    </div>
+    <p class="foot">Ce test est indicatif. Vos réponses restent sur cet écran et ne sont envoyées nulle part.</p>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  var Q = [
+    {
+      q: "Votre téléphone finit au fond d'une piscine. Qu'est-ce que vous perdez ?",
+      o: [
+        { t: "Une partie. Certaines choses sont sur un cloud, d'autres non.", p: 1 },
+        { t: "Tout : photos, contacts, conversations. Il n'existe aucune copie.", p: 0 },
+        { t: "Presque rien. Tout est copié ailleurs automatiquement.", p: 2 }
+      ],
+      tip: "Un téléphone, ça se perd, ça se casse, ça se vole. Une copie automatique transforme le drame en simple contretemps.",
+      act: "Activez la sauvegarde automatique de votre téléphone dans ses réglages (iCloud, Google ou un autre service)."
+    },
+    {
+      q: "Quand a eu lieu la dernière sauvegarde complète de votre ordinateur ?",
+      o: [
+        { t: "Je ne sais plus, ou alors jamais.", p: 0 },
+        { t: "Ce mois-ci, et elle se lance toute seule.", p: 2 },
+        { t: "Il y a plusieurs mois.", p: 1 }
+      ],
+      tip: "Une sauvegarde manuelle dépend de votre mémoire. Une sauvegarde automatique, elle, n'oublie jamais.",
+      act: "Programmez une sauvegarde automatique de votre ordinateur (Time Machine sur Mac, Sauvegarde ou Historique des fichiers sur Windows)."
+    },
+    {
+      q: "Où vivent vos photos de vacances ?",
+      o: [
+        { t: "Sur mon téléphone, et c'est tout.", p: 0 },
+        { t: "Sur mon téléphone et sur un cloud.", p: 1 },
+        { t: "Sur mon téléphone, sur un cloud et sur un disque externe.", p: 2 }
+      ],
+      tip: "Un cloud qui synchronise n'est pas une vraie sauvegarde : si vous supprimez une photo par erreur, elle disparaît partout. D'où la règle 3-2-1.",
+      act: "Appliquez la règle 3-2-1 à vos photos : 3 copies, 2 supports différents, 1 copie hors de chez vous."
+    },
+    {
+      q: "Votre disque dur externe de sauvegarde : il est où, exactement ?",
+      o: [
+        { t: "Dans le tiroir, juste à côté de l'ordinateur.", p: 1 },
+        { t: "Je n'ai pas de disque externe.", p: 0 },
+        { t: "Une copie est rangée ailleurs : chez un proche, au travail ou sur un cloud.", p: 2 }
+      ],
+      tip: "Cambriolage, incendie, dégât des eaux : une sauvegarde posée à côté de l'ordinateur subit le même sort que lui.",
+      act: "Gardez au moins une copie hors de chez vous : chez un proche, au travail ou sur un cloud."
+    },
+    {
+      q: "Comment gérez-vous vos mots de passe ?",
+      o: [
+        { t: "Le même partout, ou presque.", p: 0 },
+        { t: "Un gestionnaire de mots de passe, avec un mot de passe unique par site.", p: 2 },
+        { t: "Des variantes que je garde en tête.", p: 1 }
+      ],
+      tip: "Quand un site se fait pirater, les pirates testent aussitôt le même mot de passe ailleurs. Un mot de passe par site limite les dégâts à un seul compte.",
+      act: "Adoptez un gestionnaire de mots de passe et changez en premier celui de votre messagerie."
+    },
+    {
+      q: "La double authentification (un code en plus du mot de passe), vous l'avez activée ?",
+      o: [
+        { t: "Sur un ou deux comptes seulement.", p: 1 },
+        { t: "Sur tous mes comptes importants.", p: 2 },
+        { t: "Je ne sais pas ce que c'est.", p: 0 }
+      ],
+      tip: "Même avec votre mot de passe volé, un pirate reste bloqué sans le second code. Une application d'authentification résiste mieux que le SMS.",
+      act: "Activez la double authentification sur votre messagerie, vos comptes bancaires et vos réseaux sociaux."
+    },
+    {
+      q: "Votre boîte mail est piratée ce matin. Pouvez-vous en reprendre le contrôle ?",
+      o: [
+        { t: "Je ne crois pas, je n'ai jamais rien configuré pour ça.", p: 0 },
+        { t: "Oui, mon téléphone et mon e-mail de secours sont à jour.", p: 2 },
+        { t: "Sûrement, mais ce sera long et compliqué.", p: 1 }
+      ],
+      tip: "Votre boîte mail ouvre la porte à presque tous vos autres comptes grâce au bouton « mot de passe oublié ». La perdre, c'est perdre le trousseau entier.",
+      act: "Vérifiez le numéro de téléphone et l'e-mail de récupération de votre messagerie principale."
+    },
+    {
+      q: "Vos papiers importants (identité, contrats, factures) existent sous quelle forme ?",
+      o: [
+        { t: "Quelques photos ou scans éparpillés sur mon téléphone.", p: 1 },
+        { t: "Papier uniquement, dans un tiroir.", p: 0 },
+        { t: "Numérisés et copiés dans un espace protégé par mot de passe.", p: 2 }
+      ],
+      tip: "Après un vol, un incendie ou un déménagement raté, un scan de vos papiers fait gagner un temps précieux dans les démarches.",
+      act: "Numérisez vos papiers essentiels et rangez-les dans un espace protégé par mot de passe ou chiffré."
+    },
+    {
+      q: "Avez-vous déjà vérifié que vous savez restaurer vos sauvegardes ?",
+      o: [
+        { t: "Je suppose que ça marcherait.", p: 1 },
+        { t: "Une sauvegarde, ça se teste ?", p: 0 },
+        { t: "Oui, je teste de temps en temps.", p: 2 }
+      ],
+      tip: "Une sauvegarde jamais testée reste une hypothèse. Ouvrir un fichier sauvegardé de temps à autre suffit à le savoir.",
+      act: "Une fois par trimestre, restaurez un fichier au hasard pour vérifier que votre sauvegarde fonctionne vraiment."
+    },
+    {
+      q: "Un SMS annonce : « Votre colis est bloqué, réglez 1,99 € ici ». Que faites-vous ?",
+      o: [
+        { t: "J'ignore le lien et je vérifie sur le site officiel du transporteur.", p: 2 },
+        { t: "Je clique vite, c'est sûrement légitime.", p: 0 },
+        { t: "Je doute, je regarde le numéro, puis je clique peut-être.", p: 1 }
+      ],
+      tip: "Ces messages jouent sur l'urgence. Certains ouvrent la porte aux rançongiciels, qui chiffrent vos fichiers contre de l'argent. Une sauvegarde déconnectée reste la meilleure parade.",
+      act: "Ne cliquez jamais sur un lien reçu par SMS ou e-mail sans l'avoir attendu, passez par le site officiel."
+    }
+  ];
+
+  var PROFILES = [
+    { max: 6,  name: "Funambule sans filet", desc: "Vos données tiennent par miracle. Bonne nouvelle : quelques gestes simples suffisent pour installer un filet, et ils sont listés plus bas." },
+    { max: 12, name: "Sur la bonne voie", desc: "Vous avez de bons réflexes et quelques trous dans la raquette. Les actions ci-dessous les comblent en une soirée." },
+    { max: 17, name: "Coffre-fort presque blindé", desc: "Votre protection est solide. Il reste deux ou trois détails à régler pour dormir vraiment tranquille." },
+    { max: 20, name: "Forteresse numérique", desc: "Sauvegardes testées, comptes verrouillés : vous pourriez donner des cours. Partagez ce test autour de vous." }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var intro = $('intro'), quiz = $('quiz'), result = $('result');
+  var cur = 0, answers = [], locked = false;
+  var LETTERS = ['A', 'B', 'C'];
+
+  function show(view) {
+    intro.hidden = view !== 'intro';
+    quiz.hidden = view !== 'quiz';
+    result.hidden = view !== 'result';
+    try { window.scrollTo(0, 0); } catch (e) {}
+  }
+
+  function total() { return answers.reduce(function (a, b) { return a + b; }, 0); }
+
+  function renderSegs() {
+    var s = $('segs');
+    s.innerHTML = '';
+    for (var i = 0; i < Q.length; i++) {
+      var sp = document.createElement('span');
+      if (i < cur) sp.className = 'done';
+      else if (i === cur) sp.className = 'now';
+      s.appendChild(sp);
+    }
+  }
+
+  function renderQuestion() {
+    locked = false;
+    var item = Q[cur];
+    $('qCount').textContent = 'Question ' + (cur + 1) + ' sur ' + Q.length;
+    $('qScore').textContent = total() + (total() > 1 ? ' pts' : ' pt');
+    $('qText').textContent = item.q;
+    $('feedbackSlot').innerHTML = '';
+    $('nextBtn').hidden = true;
+    renderSegs();
+    var box = $('opts');
+    box.innerHTML = '';
+    item.o.forEach(function (opt, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt';
+      b.dataset.i = i;
+      var k = document.createElement('span');
+      k.className = 'key';
+      k.textContent = LETTERS[i];
+      var t = document.createElement('span');
+      t.className = 'txt';
+      t.textContent = opt.t;
+      b.appendChild(k);
+      b.appendChild(t);
+      b.addEventListener('click', function () { choose(i); });
+      box.appendChild(b);
+    });
+  }
+
+  function choose(i) {
+    if (locked) return;
+    locked = true;
+    var item = Q[cur], p = item.o[i].p;
+    answers[cur] = p;
+    var btns = $('opts').querySelectorAll('.opt');
+    btns.forEach(function (b, idx) {
+      b.disabled = true;
+      if (idx === i) b.classList.add('picked'); else b.classList.add('dim');
+      if (item.o[idx].p === 2) {
+        var tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = 'Meilleure réponse';
+        b.querySelector('.txt').appendChild(document.createElement('br'));
+        b.querySelector('.txt').appendChild(tag);
+        b.classList.remove('dim');
+      }
+    });
+    var react = p === 2 ? 'Bien joué.' : p === 1 ? 'Presque.' : 'Aïe.';
+    var fb = document.createElement('div');
+    fb.className = 'feedback';
+    var pill = document.createElement('span');
+    pill.className = 'score-pill s' + p;
+    pill.textContent = '+' + p + (p > 1 ? ' pts' : ' pt');
+    var txt = document.createElement('p');
+    var strong = document.createElement('strong');
+    strong.textContent = react + ' ';
+    txt.appendChild(strong);
+    txt.appendChild(document.createTextNode(item.tip));
+    fb.appendChild(pill);
+    fb.appendChild(txt);
+    $('feedbackSlot').innerHTML = '';
+    $('feedbackSlot').appendChild(fb);
+    $('qScore').textContent = total() + (total() > 1 ? ' pts' : ' pt');
+    var nb = $('nextBtn');
+    nb.textContent = cur === Q.length - 1 ? 'Voir mon bilan' : 'Question suivante';
+    nb.hidden = false;
+    nb.focus({ preventScroll: false });
+  }
+
+  function profileFor(score) {
+    for (var i = 0; i < PROFILES.length; i++) if (score <= PROFILES[i].max) return PROFILES[i];
+    return PROFILES[PROFILES.length - 1];
+  }
+
+  function showResult() {
+    var score = total();
+    var pct = Math.round(score / (Q.length * 2) * 100);
+    var prof = profileFor(score);
+    $('pctNum').textContent = pct;
+    $('profName').textContent = prof.name;
+    $('profDesc').textContent = prof.desc;
+    var g = $('gaugeFill');
+    g.style.width = '0%';
+    setTimeout(function () { g.style.width = pct + '%'; }, 60);
+
+    var cells = $('cells');
+    cells.innerHTML = '';
+    answers.forEach(function (p, i) {
+      var c = document.createElement('div');
+      c.className = 'cell s' + p;
+      c.innerHTML = '<span>Q' + (i + 1) + '</span><b>' + p + '/2</b>';
+      cells.appendChild(c);
+    });
+
+    var weak = answers.map(function (p, i) { return { p: p, i: i }; })
+      .filter(function (x) { return x.p < 2; })
+      .sort(function (a, b) { return a.p - b.p || a.i - b.i; })
+      .slice(0, 3);
+    var list = $('actions');
+    list.innerHTML = '';
+    if (weak.length === 0) {
+      $('actTitle').textContent = 'Votre prochain défi';
+      var li = document.createElement('li');
+      var sp = document.createElement('span');
+      sp.textContent = "Rien à corriger. Aidez un proche à passer ce test : c'est souvent là que les vraies sauvegardes manquent.";
+      li.appendChild(sp);
+      list.appendChild(li);
+    } else {
+      $('actTitle').textContent = weak.length > 1 ? 'À régler en priorité' : 'Il reste une chose à régler';
+      weak.forEach(function (x) {
+        var li = document.createElement('li');
+        var sp = document.createElement('span');
+        sp.textContent = Q[x.i].act;
+        li.appendChild(sp);
+        list.appendChild(li);
+      });
+    }
+    $('status').textContent = '';
+    $('shareText').hidden = true;
+    show('result');
+  }
+
+  function shareMessage() {
+    var score = total();
+    var pct = Math.round(score / (Q.length * 2) * 100);
+    return "J'ai obtenu " + pct + " % de protection au test de la sauvegarde des données : « " + profileFor(score).name + " ». Et vos données, elles survivraient à une mauvaise journée ?";
+  }
+
+  function copyScore() {
+    var msg = shareMessage();
+    var st = $('status'), ta = $('shareText');
+    function fallback() {
+      ta.value = msg;
+      ta.hidden = false;
+      ta.focus();
+      ta.select();
+      st.textContent = 'Sélectionnez le texte ci-dessous et copiez-le.';
+    }
+    try {
+      navigator.clipboard.writeText(msg).then(function () {
+        ta.hidden = true;
+        st.textContent = 'Copié. Vous pouvez le coller dans un message.';
+      }, fallback);
+    } catch (e) { fallback(); }
+  }
+
+  function restart() {
+    cur = 0; answers = [];
+    show('quiz');
+    renderQuestion();
+  }
+
+  $('startBtn').addEventListener('click', restart);
+  $('againBtn').addEventListener('click', restart);
+  $('copyBtn').addEventListener('click', copyScore);
+  $('nextBtn').addEventListener('click', function () {
+    if (cur < Q.length - 1) { cur++; renderQuestion(); $('qText').scrollIntoView({ block: 'center', behavior: 'auto' }); }
+    else showResult();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (quiz.hidden || locked) return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 3) choose(n - 1);
+  });
+})();
+</script>
+
+</body></html>
